@@ -1,0 +1,42 @@
+
+{
+  "name": "Nova Learn",
+  "short_name": "Nova",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0F19",
+  "theme_color": "#0B0F19",
+  "orientation": "portrait",
+  "id": "/",
+  "description": "Your AI-powered cosmic study companion.",
+  "icons": [
+    {
+      "src": "https://picsum.photos/192",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://picsum.photos/512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://picsum.photos/400/800",
+      "sizes": "400x800",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Home Screen"
+    },
+    {
+      "src": "https://picsum.photos/400/800",
+      "sizes": "400x800",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Study Plan"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "name": "Nova Learn",
+  "description": "A smart, cosmic-themed study assistant that adapts to your learning style using AI. Features study planning, progress tracking, and an adaptive AI tutor.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
