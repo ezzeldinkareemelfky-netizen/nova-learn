@@ -30,61 +30,75 @@ const Auth: React.FC<AuthProps> = ({ onLogin, lang, setLang }) => {
         return;
     }
 
-    // Get existing users database from local storage
-    const usersDbStr = localStorage.getItem('nova_users_db');
-    const usersDb = usersDbStr ? JSON.parse(usersDbStr) : {};
+    try {
+        // Get existing users database from local storage safely
+        let usersDb: Record<string, any> = {};
+        try {
+            const usersDbStr = localStorage.getItem('nova_users_db');
+            if (usersDbStr) {
+                usersDb = JSON.parse(usersDbStr);
+            }
+        } catch (parseError) {
+            console.error("User DB corrupted, resetting", parseError);
+            usersDb = {};
+            localStorage.setItem('nova_users_db', '{}');
+        }
 
-    if (isLogin) {
-        // --- LOGIN LOGIC ---
-        const userData = usersDb[email.toLowerCase()];
-        
-        if (userData && userData.password === password) {
-            onLogin({
-              ...userData.user,
-              language: lang
-            });
+        if (isLogin) {
+            // --- LOGIN LOGIC ---
+            const userData = usersDb[email.toLowerCase()];
+            
+            if (userData && userData.password === password) {
+                onLogin({
+                  ...userData.user,
+                  language: lang
+                });
+            } else {
+                setError("Invalid email or password");
+            }
         } else {
-            setError("Invalid email or password");
+            // --- SIGN UP LOGIC ---
+            if (!name) {
+                setError("Please enter your name");
+                return;
+            }
+
+            if (usersDb[email.toLowerCase()]) {
+                setError("User with this email already exists");
+                return;
+            }
+
+            // Create new user object
+            const newUser: User = {
+              name: name,
+              email: email.toLowerCase(),
+              learningStyle: LearningStyle.UNDEFINED,
+              streak: 1,
+              points: 0,
+              level: 1,
+              language: lang,
+              achievements: [
+                 { id: '1', title: 'Nova Novice', description: 'Created your account', icon: '🚀', unlocked: true },
+                 { id: '2', title: 'Style Seeker', description: 'Completed learning style test', icon: '🧠', unlocked: false },
+                 { id: '3', title: 'Focus Master', description: 'Complete a Pomodoro session', icon: '⏱️', unlocked: false },
+                 { id: '4', title: 'Social Star', description: 'Make your first community post', icon: '🌟', unlocked: false },
+                 { id: '5', title: 'Task Titan', description: 'Complete 3 study tasks', icon: '✅', unlocked: false },
+                 { id: '6', title: 'Streak Week', description: '7 day login streak', icon: '🔥', unlocked: false },
+              ],
+            };
+
+            // Save to "Database"
+            usersDb[email.toLowerCase()] = {
+                user: newUser,
+                password: password // Note: In a real app, never store plain passwords!
+            };
+            localStorage.setItem('nova_users_db', JSON.stringify(usersDb));
+
+            onLogin(newUser);
         }
-    } else {
-        // --- SIGN UP LOGIC ---
-        if (!name) {
-            setError("Please enter your name");
-            return;
-        }
-
-        if (usersDb[email.toLowerCase()]) {
-            setError("User with this email already exists");
-            return;
-        }
-
-        // Create new user object
-        const newUser: User = {
-          name: name,
-          email: email.toLowerCase(),
-          learningStyle: LearningStyle.UNDEFINED,
-          streak: 1,
-          points: 0,
-          level: 1,
-          language: lang,
-          achievements: [
-             { id: '1', title: 'Nova Novice', description: 'Created your account', icon: '🚀', unlocked: true },
-             { id: '2', title: 'Style Seeker', description: 'Completed learning style test', icon: '🧠', unlocked: false },
-             { id: '3', title: 'Focus Master', description: 'Complete a Pomodoro session', icon: '⏱️', unlocked: false },
-             { id: '4', title: 'Social Star', description: 'Make your first community post', icon: '🌟', unlocked: false },
-             { id: '5', title: 'Task Titan', description: 'Complete 3 study tasks', icon: '✅', unlocked: false },
-             { id: '6', title: 'Streak Week', description: '7 day login streak', icon: '🔥', unlocked: false },
-          ],
-        };
-
-        // Save to "Database"
-        usersDb[email.toLowerCase()] = {
-            user: newUser,
-            password: password // Note: In a real app, never store plain passwords!
-        };
-        localStorage.setItem('nova_users_db', JSON.stringify(usersDb));
-
-        onLogin(newUser);
+    } catch (err) {
+        setError("An unexpected error occurred. Please try clearing your browser data.");
+        console.error(err);
     }
   };
 

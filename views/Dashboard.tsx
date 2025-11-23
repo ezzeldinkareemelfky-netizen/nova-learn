@@ -62,7 +62,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user, tasks, setScreen, onPomodor
   };
 
   // Calculations for Summary (Only Today's tasks)
-  const todaysTasks = tasks.filter(t => t.date === today);
+  // Ensure tasks is an array to prevent crash
+  const safeTasks = Array.isArray(tasks) ? tasks : [];
+  const todaysTasks = safeTasks.filter(t => t.date === today);
   const totalTasks = todaysTasks.length;
   const completedTasks = todaysTasks.filter(t => t.completed).length;
   const completionPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
@@ -92,7 +94,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, tasks, setScreen, onPomodor
 
       {/* Daily Summary */}
       <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-6 shadow-xl relative overflow-hidden group">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-neon-purple/20 rounded-full filter blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+        <div className="absolute top-0 right-0 w-32 h-32 bg-neon-purple/20 rounded-full filter blur-3xl -translate-y-1/2 translate-x-1/3"></div>
         
         <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
             {t.todaySummary}

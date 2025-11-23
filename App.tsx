@@ -14,6 +14,20 @@ import ExamGenerator from './views/ExamGenerator';
 import { Screen, User, LearningStyle, Achievement, Task, Post, BeforeInstallPromptEvent, Deck } from './types';
 import { getDirection, Language } from './utils/translations';
 
+// Helper to safely parse JSON without crashing
+const safeJSONParse = (key: string, fallback: any) => {
+  try {
+    const item = localStorage.getItem(key);
+    if (!item) return fallback;
+    // Handle 'undefined' string which sometimes gets saved erroneously
+    if (item === 'undefined' || item === 'null') return fallback;
+    return JSON.parse(item);
+  } catch (e) {
+    console.warn(`Failed to parse ${key}, resetting to default.`);
+    return fallback;
+  }
+};
+
 // Generate initial tasks for "Today" so new users see something
 const today = new Date().toISOString().split('T')[0];
 
@@ -94,63 +108,81 @@ const App: React.FC = () => {
 
   // 1. Check for active session on startup
   useEffect(() => {
-      const sessionEmail = localStorage.getItem('nova_active_session');
-      if (sessionEmail) {
-          const usersDb = JSON.parse(localStorage.getItem('nova_users_db') || '{}');
-          const savedUserWrapper = usersDb[sessionEmail];
-          
-          if (savedUserWrapper && savedUserWrapper.user) {
-              setUser(savedUserWrapper.user);
-              setLang(savedUserWrapper.user.language || 'en'); // Load saved language
-              loadUserData(sessionEmail);
-              if (savedUserWrapper.user.learningStyle === LearningStyle.UNDEFINED) {
-                  setScreen(Screen.QUIZ);
-              } else {
-                  setScreen(Screen.DASHBOARD);
-              }
-          }
+      try {
+        const sessionEmail = localStorage.getItem('nova_active_session');
+        if (sessionEmail) {
+            const usersDb = safeJSONParse('nova_users_db', {});
+            const savedUserWrapper = usersDb[sessionEmail];
+            
+            if (savedUserWrapper && savedUserWrapper.user) {
+                setUser(savedUserWrapper.user);
+                setLang(savedUserWrapper.user.language || 'en'); // Load saved language
+                loadUserData(sessionEmail);
+                if (savedUserWrapper.user.learningStyle === LearningStyle.UNDEFINED) {
+                    setScreen(Screen.QUIZ);
+                } else {
+                    setScreen(Screen.DASHBOARD);
+                }
+            } else {
+                // Invalid session, clear it
+                localStorage.removeItem('nova_active_session');
+                setScreen(Screen.AUTH);
+            }
+        } else {
+            setScreen(Screen.AUTH);
+        }
+      } catch (e) {
+          console.error("Critical error restoring session:", e);
+          setScreen(Screen.AUTH);
       }
   }, []);
 
   // 2. Helper to load specific user data
   const loadUserData = (email: string) => {
       try {
-          const savedTasks = localStorage.getItem(`nova_tasks_${email}`);
-          const savedPosts = localStorage.getItem(`nova_posts_${email}`); 
-          const savedDecks = localStorage.getItem(`nova_decks_${email}`);
+          const savedTasks = safeJSONParse(`nova_tasks_${email}`, null);
+          const savedPosts = safeJSONParse(`nova_posts_${email}`, null); 
+          const savedDecks = safeJSONParse(`nova_decks_${email}`, null);
 
-          if (savedTasks) {
-              setTasks(JSON.parse(savedTasks));
+          if (Array.isArray(savedTasks)) {
+              setTasks(savedTasks);
           } else {
-              // New user gets default tasks for today
               setTasks(INITIAL_TASKS); 
           }
           
-          if (savedPosts) setPosts(JSON.parse(savedPosts));
+          if (Array.isArray(savedPosts)) setPosts(savedPosts);
           else setPosts(INITIAL_POSTS);
 
-          if (savedDecks) setDecks(JSON.parse(savedDecks));
+          if (Array.isArray(savedDecks)) setDecks(savedDecks);
           else setDecks([]);
 
       } catch (e) {
           console.error("Failed to load user data", e);
+          // Fallbacks
+          setTasks(INITIAL_TASKS);
+          setPosts(INITIAL_POSTS);
+          setDecks([]);
       }
   };
 
   // 3. Save User Data on Change (Only if user is logged in)
   useEffect(() => {
       if (user) {
-          // Update the main user record in the DB
-          const usersDb = JSON.parse(localStorage.getItem('nova_users_db') || '{}');
-          if (usersDb[user.email]) {
-              usersDb[user.email].user = user; 
-              localStorage.setItem('nova_users_db', JSON.stringify(usersDb));
-          }
+          try {
+            // Update the main user record in the DB
+            const usersDb = safeJSONParse('nova_users_db', {});
+            if (usersDb[user.email]) {
+                usersDb[user.email].user = user; 
+                localStorage.setItem('nova_users_db', JSON.stringify(usersDb));
+            }
 
-          // Save specific user data
-          localStorage.setItem(`nova_tasks_${user.email}`, JSON.stringify(tasks));
-          localStorage.setItem(`nova_posts_${user.email}`, JSON.stringify(posts));
-          localStorage.setItem(`nova_decks_${user.email}`, JSON.stringify(decks));
+            // Save specific user data
+            localStorage.setItem(`nova_tasks_${user.email}`, JSON.stringify(tasks));
+            localStorage.setItem(`nova_posts_${user.email}`, JSON.stringify(posts));
+            localStorage.setItem(`nova_decks_${user.email}`, JSON.stringify(decks));
+          } catch (e) {
+              console.error("Failed to save data", e);
+          }
       }
   }, [user, tasks, posts, decks]);
 
