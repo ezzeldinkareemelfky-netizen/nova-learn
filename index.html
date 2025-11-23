@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -6,7 +7,8 @@
     <meta name="theme-color" content="#0B0F19" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="manifest" href="/manifest.json" />
+    <!-- Use relative path for manifest -->
+    <link rel="manifest" href="./manifest.json" />
     <link rel="apple-touch-icon" href="https://picsum.photos/192" />
     
     <!-- Google Fonts: Cairo for Arabic -->
@@ -104,5 +106,22 @@
 </head>
   <body>
     <div id="root" class="h-full w-full"></div>
+    
+    <!-- Error Handler to debug black screens -->
+    <div id="error-display" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:black; color:red; padding:20px; z-index:9999; overflow:auto;">
+      <h2 style="color:white">Application Error</h2>
+      <pre id="error-message"></pre>
+    </div>
+    <script>
+      window.onerror = function(message, source, lineno, colno, error) {
+        const el = document.getElementById('error-display');
+        const msgEl = document.getElementById('error-message');
+        el.style.display = 'block';
+        msgEl.innerText = `${message}\nAt: ${source}:${lineno}:${colno}\n${error ? error.stack : ''}`;
+      };
+    </script>
+    
+    <!-- Entry Point -->
+    <script type="module" src="./index.tsx"></script>
   </body>
 </html>

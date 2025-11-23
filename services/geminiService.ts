@@ -2,9 +2,20 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { LearningStyle, Question } from "../types";
 
-// Helper to get client with the correct key
+// Helper to get client with the correct key safely for browser environments
 const getClient = (userKey?: string) => {
-    const key = userKey || process.env.API_KEY;
+    // Check if process is defined (Node env) to avoid "process is not defined" error in browser
+    let envKey = undefined;
+    try {
+        if (typeof process !== 'undefined' && process.env) {
+            envKey = process.env.API_KEY;
+        }
+    } catch (e) {
+        // Ignore error if process is accessed in strict browser env
+    }
+
+    const key = userKey || envKey;
+    
     if (!key) return null;
     return new GoogleGenAI({ apiKey: key });
 };

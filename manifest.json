@@ -2,12 +2,12 @@
 {
   "name": "Nova Learn",
   "short_name": "Nova",
-  "start_url": "/",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#0B0F19",
   "theme_color": "#0B0F19",
   "orientation": "portrait",
-  "id": "/",
+  "id": "nova-learn-app",
   "description": "Your AI-powered cosmic study companion.",
   "icons": [
     {

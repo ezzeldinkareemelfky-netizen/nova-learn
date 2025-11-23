@@ -20,10 +20,11 @@ root.render(
   </React.StrictMode>
 );
 
-// Register Service Worker
+// Register Service Worker with relative path
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then(registration => {
+    // Use ./sw.js to work in subdirectories like /nova-learn/
+    navigator.serviceWorker.register('./sw.js').then(registration => {
       console.log('SW registered: ', registration);
     }).catch(registrationError => {
       console.log('SW registration failed: ', registrationError);
