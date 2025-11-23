@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { User, Screen, Task } from '../types';
 import { generateDailyTip } from '../services/geminiService';
 import { Play, Calendar, Zap, Clock, X, Pause, RotateCcw } from 'lucide-react';
+import { translations, Language } from '../utils/translations';
 
 interface DashboardProps {
   user: User;
@@ -11,22 +12,26 @@ interface DashboardProps {
   onPomodoroComplete: () => void;
   doNotDisturb: boolean;
   setDoNotDisturb: (val: boolean) => void;
+  lang: Language;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ user, tasks, setScreen, onPomodoroComplete, doNotDisturb, setDoNotDisturb }) => {
-  const [tip, setTip] = useState<string>('Loading your cosmic wisdom...');
+const Dashboard: React.FC<DashboardProps> = ({ user, tasks, setScreen, onPomodoroComplete, doNotDisturb, setDoNotDisturb, lang }) => {
+  const [tip, setTip] = useState<string>(lang === 'ar' ? 'جاري تحميل الحكمة...' : 'Loading your cosmic wisdom...');
   const [showPomodoro, setShowPomodoro] = useState(false);
   const [timer, setTimer] = useState(25 * 60); // 25 minutes
   const [isActive, setIsActive] = useState(false);
+  const today = new Date().toISOString().split('T')[0];
+  
+  const t = translations[lang];
 
   useEffect(() => {
     const fetchTip = async () => {
-      const dailyTip = await generateDailyTip(user.learningStyle);
+      const dailyTip = await generateDailyTip(user.learningStyle, user.apiKey, lang);
       setTip(dailyTip);
     };
     fetchTip();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [lang]);
 
   // Timer Logic
   useEffect(() => {
@@ -56,31 +61,32 @@ const Dashboard: React.FC<DashboardProps> = ({ user, tasks, setScreen, onPomodor
       setTimer(25 * 60);
   };
 
-  // Calculations for Summary
-  const totalTasks = tasks.length;
-  const completedTasks = tasks.filter(t => t.completed).length;
+  // Calculations for Summary (Only Today's tasks)
+  const todaysTasks = tasks.filter(t => t.date === today);
+  const totalTasks = todaysTasks.length;
+  const completedTasks = todaysTasks.filter(t => t.completed).length;
   const completionPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
   
-  // Calculate total duration of completed tasks
-  const completedHours = tasks
+  // Calculate total duration of completed tasks today
+  const completedHours = todaysTasks
     .filter(t => t.completed)
     .reduce((acc, curr) => acc + curr.duration, 0);
 
-  const nextTask = tasks.find(t => !t.completed);
+  const nextTask = todaysTasks.find(t => !t.completed);
 
   return (
     <div className="p-6 pt-10 pb-24 space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-slate-400 text-sm uppercase tracking-wider">Good Morning,</h2>
+          <h2 className="text-slate-400 text-sm uppercase tracking-wider">{t.goodMorning}</h2>
           <h1 className="text-3xl font-bold text-white">{user.name}</h1>
         </div>
         <button 
           onClick={() => setScreen(Screen.SETTINGS)}
           className="w-12 h-12 rounded-full bg-gradient-to-tr from-neon-cyan to-blue-500 p-[2px] hover:shadow-[0_0_15px_rgba(0,240,255,0.5)] transition-shadow"
         >
-             <img src="https://picsum.photos/200" alt="Profile" className="w-full h-full rounded-full object-cover border-2 border-space-900" />
+             <img src={user.avatar || "https://picsum.photos/200"} alt="Profile" className="w-full h-full rounded-full object-cover border-2 border-space-900" />
         </button>
       </div>
 
@@ -89,12 +95,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, tasks, setScreen, onPomodor
         <div className="absolute top-0 right-0 w-32 h-32 bg-neon-purple/20 rounded-full filter blur-3xl -translate-y-1/2 translate-x-1/2"></div>
         
         <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            Today's Summary
+            {t.todaySummary}
         </h3>
 
         <div className="grid grid-cols-2 gap-4">
              <div className="bg-space-800/50 p-4 rounded-2xl border border-white/5">
-                <span className="text-slate-400 text-xs">Tasks</span>
+                <span className="text-slate-400 text-xs">{t.tasks}</span>
                 <p className="text-2xl font-bold text-neon-cyan">{completionPercentage}%</p>
                 <div className="w-full bg-slate-700 h-1 rounded-full mt-2">
                     <div 
@@ -104,7 +110,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, tasks, setScreen, onPomodor
                 </div>
              </div>
              <div className="bg-space-800/50 p-4 rounded-2xl border border-white/5">
-                <span className="text-slate-400 text-xs">Study Time</span>
+                <span className="text-slate-400 text-xs">{t.studyTime}</span>
                 <p className="text-2xl font-bold text-neon-purple">{completedHours}h</p>
                 <div className="w-full bg-slate-700 h-1 rounded-full mt-2">
                     {/* Mock daily goal of 4 hours */}
@@ -117,7 +123,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, tasks, setScreen, onPomodor
         </div>
 
         <div className="mt-6">
-            <h4 className="text-sm font-medium text-slate-300 mb-2">AI Suggestion</h4>
+            <h4 className="text-sm font-medium text-slate-300 mb-2">{t.aiSuggestion}</h4>
             <div className="flex items-start gap-3 bg-gradient-to-r from-indigo-900/50 to-purple-900/50 p-4 rounded-2xl border border-indigo-500/30">
                 <Zap className="text-yellow-400 shrink-0 mt-1" size={18} />
                 <p className="text-sm text-slate-200 leading-relaxed italic">
@@ -136,7 +142,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, tasks, setScreen, onPomodor
             <div className="w-12 h-12 rounded-2xl bg-orange-500/20 flex items-center justify-center text-orange-400 group-hover:scale-110 transition-transform">
                 <Clock size={24} />
             </div>
-            <span className="font-medium text-sm">Pomodoro</span>
+            <span className="font-medium text-sm">{t.pomodoro}</span>
         </button>
         <button 
             onClick={() => setScreen(Screen.QUIZ)}
@@ -148,7 +154,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, tasks, setScreen, onPomodor
             <div className="w-12 h-12 rounded-2xl bg-neon-cyan/20 flex items-center justify-center text-neon-cyan group-hover:scale-110 transition-transform">
                 <Zap size={24} />
             </div>
-            <span className="font-medium text-sm">Style Test</span>
+            <span className="font-medium text-sm">{t.styleTest}</span>
         </button>
       </div>
 
@@ -161,19 +167,19 @@ const Dashboard: React.FC<DashboardProps> = ({ user, tasks, setScreen, onPomodor
                <div className="bg-space-900 rounded-3xl p-4 flex items-center justify-between group-hover:bg-space-800 transition-colors">
                    <div className="flex items-center gap-4">
                        <div className="w-10 h-10 rounded-full bg-neon-blue/20 flex items-center justify-center text-neon-blue">
-                           <Play size={20} fill="currentColor" />
+                           <Play size={20} fill="currentColor" className="ml-1 rtl:mr-1 rtl:ml-0" />
                        </div>
-                       <div className="text-left">
-                           <p className="font-bold">Start {nextTask.title}</p>
-                           <p className="text-xs text-slate-400">Next up in your plan</p>
+                       <div className="text-left rtl:text-right">
+                           <p className="font-bold">{t.start} {nextTask.title}</p>
+                           <p className="text-xs text-slate-400">{t.nextUp}</p>
                        </div>
                    </div>
-                   <Calendar size={20} className="text-slate-500" />
+                   <Calendar size={20} className="text-slate-500 rtl:rotate-180" />
                </div>
            </button>
        ) : (
         <div className="w-full p-4 rounded-3xl bg-space-800 border border-white/5 text-center text-slate-400">
-            <p>🎉 All tasks completed for today!</p>
+            <p>{t.allDone}</p>
         </div>
        )}
 
@@ -188,8 +194,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, tasks, setScreen, onPomodor
                <X size={24} />
              </button>
              
-             <h2 className="text-2xl font-bold mb-2">Deep Focus</h2>
-             <p className="text-slate-400 text-sm mb-8">Stay focused for 25 minutes</p>
+             <h2 className="text-2xl font-bold mb-2">{t.deepFocus}</h2>
+             <p className="text-slate-400 text-sm mb-8">25 min</p>
              
              <div className="w-48 h-48 rounded-full border-4 border-space-700 flex items-center justify-center relative mb-8">
                <div className="absolute inset-0 rounded-full border-4 border-neon-cyan border-t-transparent animate-spin duration-[3000ms]" style={{ animationPlayState: isActive ? 'running' : 'paused' }}></div>
@@ -201,7 +207,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, tasks, setScreen, onPomodor
                  onClick={toggleTimer}
                  className={`flex-1 py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 transition-colors ${isActive ? 'bg-yellow-500/20 text-yellow-400' : 'bg-neon-blue text-white'}`}
                >
-                 {isActive ? <><Pause size={20}/> Pause</> : <><Play size={20}/> Start</>}
+                 {isActive ? <><Pause size={20}/> {t.pause}</> : <><Play size={20}/> {t.start}</>}
                </button>
                <button 
                  onClick={resetTimer}

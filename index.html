@@ -8,12 +8,22 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="https://picsum.photos/192" />
+    
+    <!-- Google Fonts: Cairo for Arabic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+
     <title>Nova Learn</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
+        darkMode: 'class',
         theme: {
           extend: {
+            fontFamily: {
+              sans: ['Segoe UI', 'Cairo', 'sans-serif'],
+            },
             colors: {
               space: {
                 900: '#0B0F19',
@@ -52,7 +62,7 @@
     <style>
       body {
         background-color: #0B0F19;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-family: 'Segoe UI', 'Cairo', Tahoma, Geneva, Verdana, sans-serif;
         overflow: hidden; /* Prevent body scroll, handle in app */
         -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
         touch-action: manipulation; /* Improve touch response */
@@ -73,6 +83,11 @@
       .safe-area-bottom {
         padding-bottom: env(safe-area-inset-bottom);
       }
+
+      /* RTL specific fixes */
+      [dir="rtl"] .rotate-rtl-180 {
+        transform: rotate(180deg);
+      }
     </style>
   <script type="importmap">
 {
@@ -86,10 +101,8 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
   <body>
     <div id="root" class="h-full w-full"></div>
-  <script type="module" src="/index.tsx"></script>
-</body>
+  </body>
 </html>

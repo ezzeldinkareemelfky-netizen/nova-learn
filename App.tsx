@@ -9,22 +9,18 @@ import Chat from './views/Chat';
 import Progress from './views/Progress';
 import Settings from './views/Settings';
 import Community from './views/Community';
-import { Screen, User, LearningStyle, Achievement, Task, Post, BeforeInstallPromptEvent } from './types';
+import Flashcards from './views/Flashcards';
+import ExamGenerator from './views/ExamGenerator';
+import { Screen, User, LearningStyle, Achievement, Task, Post, BeforeInstallPromptEvent, Deck } from './types';
+import { getDirection, Language } from './utils/translations';
 
-const MOCK_ACHIEVEMENTS: Achievement[] = [
-    { id: '1', title: 'Nova Novice', description: 'Created your account', icon: '🚀', unlocked: true },
-    { id: '2', title: 'Style Seeker', description: 'Completed learning style test', icon: '🧠', unlocked: true },
-    { id: '3', title: 'Focus Master', description: 'Complete a Pomodoro session', icon: '⏱️', unlocked: false },
-    { id: '4', title: 'Social Star', description: 'Make your first community post', icon: '🌟', unlocked: false },
-    { id: '5', title: 'Task Titan', description: 'Complete 3 study tasks', icon: '✅', unlocked: false },
-    { id: '6', title: 'Streak Week', description: '7 day login streak', icon: '🔥', unlocked: false },
-];
+// Generate initial tasks for "Today" so new users see something
+const today = new Date().toISOString().split('T')[0];
 
 const INITIAL_TASKS: Task[] = [
-  { id: '1', title: 'Big Data Algorithms', time: '8:00 - 9:00am', duration: 1, completed: false, subject: 'Computer Science', color: 'from-cyan-500 to-blue-600' },
-  { id: '2', title: 'Physics II Mechanics', time: '10:00 - 11:30am', duration: 1.5, completed: false, subject: 'Physics', color: 'from-purple-500 to-pink-600' },
-  { id: '3', title: 'Data Structure Quiz', time: '12:45pm', duration: 0.5, completed: false, subject: 'CS', color: 'from-green-500 to-emerald-600' },
-  { id: '4', title: 'World History Essay', time: '2:00 - 3:00pm', duration: 1, completed: false, subject: 'History', color: 'from-orange-500 to-red-500' },
+  { id: '1', title: 'Big Data Algorithms', date: today, time: '8:00 - 9:00am', duration: 1, completed: false, subject: 'Computer Science', color: 'from-cyan-500 to-blue-600' },
+  { id: '2', title: 'Physics II Mechanics', date: today, time: '10:00 - 11:30am', duration: 1.5, completed: false, subject: 'Physics', color: 'from-purple-500 to-pink-600' },
+  { id: '3', title: 'Data Structure Quiz', date: today, time: '12:45pm', duration: 0.5, completed: false, subject: 'CS', color: 'from-green-500 to-emerald-600' },
 ];
 
 const INITIAL_POSTS: Post[] = [
@@ -47,16 +43,6 @@ const INITIAL_POSTS: Post[] = [
     comments: 8,
     tag: 'Study Group',
     timestamp: '4h ago'
-  },
-  {
-    id: '3',
-    author: 'Alex R.',
-    avatar: 'https://picsum.photos/203',
-    content: 'Does anyone have good mnemonic devices for the periodic table? My Auditory learning brain is struggling.',
-    likes: 45,
-    comments: 15,
-    tag: 'Chemistry',
-    timestamp: '6h ago'
   }
 ];
 
@@ -65,10 +51,13 @@ const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
   const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
+  const [decks, setDecks] = useState<Deck[]>([]);
   const [notification, setNotification] = useState<string | null>(null);
   const [doNotDisturb, setDoNotDisturb] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+
+  // Language State
+  const [lang, setLang] = useState<Language>('en');
 
   // Handle Install Prompt
   useEffect(() => {
@@ -84,6 +73,13 @@ const App: React.FC = () => {
     };
   }, []);
 
+  // Handle Direction Change
+  useEffect(() => {
+      const dir = getDirection(lang);
+      document.documentElement.dir = dir;
+      document.documentElement.lang = lang;
+  }, [lang]);
+
   const handleInstallApp = async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
@@ -94,57 +90,86 @@ const App: React.FC = () => {
     setDeferredPrompt(null);
   };
 
-  // Load data from local storage
-  useEffect(() => {
-    const loadData = () => {
-        try {
-            const savedUser = localStorage.getItem('nova_user');
-            const savedTasks = localStorage.getItem('nova_tasks');
-            const savedPosts = localStorage.getItem('nova_posts');
+  // --- DATA PERSISTENCE LOGIC ---
 
-            if (savedUser) setUser(JSON.parse(savedUser));
-            if (savedTasks) setTasks(JSON.parse(savedTasks));
-            if (savedPosts) setPosts(JSON.parse(savedPosts));
-        } catch (e) {
-            console.error("Failed to load data", e);
-        } finally {
-            setIsLoaded(true);
-        }
-    };
-    loadData();
+  // 1. Check for active session on startup
+  useEffect(() => {
+      const sessionEmail = localStorage.getItem('nova_active_session');
+      if (sessionEmail) {
+          const usersDb = JSON.parse(localStorage.getItem('nova_users_db') || '{}');
+          const savedUserWrapper = usersDb[sessionEmail];
+          
+          if (savedUserWrapper && savedUserWrapper.user) {
+              setUser(savedUserWrapper.user);
+              setLang(savedUserWrapper.user.language || 'en'); // Load saved language
+              loadUserData(sessionEmail);
+              if (savedUserWrapper.user.learningStyle === LearningStyle.UNDEFINED) {
+                  setScreen(Screen.QUIZ);
+              } else {
+                  setScreen(Screen.DASHBOARD);
+              }
+          }
+      }
   }, []);
 
-  // Save data on change
+  // 2. Helper to load specific user data
+  const loadUserData = (email: string) => {
+      try {
+          const savedTasks = localStorage.getItem(`nova_tasks_${email}`);
+          const savedPosts = localStorage.getItem(`nova_posts_${email}`); 
+          const savedDecks = localStorage.getItem(`nova_decks_${email}`);
+
+          if (savedTasks) {
+              setTasks(JSON.parse(savedTasks));
+          } else {
+              // New user gets default tasks for today
+              setTasks(INITIAL_TASKS); 
+          }
+          
+          if (savedPosts) setPosts(JSON.parse(savedPosts));
+          else setPosts(INITIAL_POSTS);
+
+          if (savedDecks) setDecks(JSON.parse(savedDecks));
+          else setDecks([]);
+
+      } catch (e) {
+          console.error("Failed to load user data", e);
+      }
+  };
+
+  // 3. Save User Data on Change (Only if user is logged in)
   useEffect(() => {
-      if (!isLoaded) return;
-      if (user) localStorage.setItem('nova_user', JSON.stringify(user));
-      localStorage.setItem('nova_tasks', JSON.stringify(tasks));
-      localStorage.setItem('nova_posts', JSON.stringify(posts));
-  }, [user, tasks, posts, isLoaded]);
+      if (user) {
+          // Update the main user record in the DB
+          const usersDb = JSON.parse(localStorage.getItem('nova_users_db') || '{}');
+          if (usersDb[user.email]) {
+              usersDb[user.email].user = user; 
+              localStorage.setItem('nova_users_db', JSON.stringify(usersDb));
+          }
+
+          // Save specific user data
+          localStorage.setItem(`nova_tasks_${user.email}`, JSON.stringify(tasks));
+          localStorage.setItem(`nova_posts_${user.email}`, JSON.stringify(posts));
+          localStorage.setItem(`nova_decks_${user.email}`, JSON.stringify(decks));
+      }
+  }, [user, tasks, posts, decks]);
+
 
   // --- Actions ---
 
   const showNotification = (msg: string) => {
-    if (doNotDisturb) return; // Respect DND
+    if (doNotDisturb) return;
     setNotification(msg);
     setTimeout(() => setNotification(null), 3000);
   };
 
   const handleLogin = (loggedInUser: User) => {
-    // Check if we already have a saved user with this email to avoid overwriting progress with mock
-    if (user && user.email === loggedInUser.email) {
-        setScreen(Screen.DASHBOARD);
-        return;
-    }
-
-    const fullUser: User = {
-        ...loggedInUser,
-        points: 1250,
-        level: 3,
-        achievements: MOCK_ACHIEVEMENTS
-    };
-    setUser(fullUser);
-    if (fullUser.learningStyle === LearningStyle.UNDEFINED) {
+    setUser(loggedInUser);
+    setLang(loggedInUser.language || 'en'); // Set language on login
+    localStorage.setItem('nova_active_session', loggedInUser.email);
+    loadUserData(loggedInUser.email);
+    
+    if (loggedInUser.learningStyle === LearningStyle.UNDEFINED) {
         setScreen(Screen.QUIZ);
     } else {
         setScreen(Screen.DASHBOARD);
@@ -154,13 +179,23 @@ const App: React.FC = () => {
   const handleLogout = () => {
     setUser(null);
     setScreen(Screen.AUTH);
-    localStorage.removeItem('nova_user'); 
+    localStorage.removeItem('nova_active_session');
+    setLang('en'); // Reset to English on logout
   };
+
+  const handleUpdateUser = (updatedUser: User) => {
+      setUser(updatedUser);
+      // If language changed
+      if (updatedUser.language && updatedUser.language !== lang) {
+          setLang(updatedUser.language);
+      }
+      showNotification(updatedUser.language === 'ar' ? "تم تحديث الملف الشخصي" : "Profile Updated");
+  }
 
   const handleQuizComplete = (style: LearningStyle) => {
     if (user) {
         const updatedUser = { ...user, learningStyle: style };
-        // Unlock achievement if not already
+        setUser(updatedUser);
         unlockAchievement(updatedUser, '2'); 
     }
     setScreen(Screen.DASHBOARD);
@@ -169,11 +204,10 @@ const App: React.FC = () => {
   const addXP = (amount: number, reason: string) => {
     if (!user) return;
     const newPoints = user.points + amount;
-    // Level up logic (every 1000 points)
     const newLevel = Math.floor(newPoints / 1000) + 1;
     
     if (newLevel > user.level) {
-        showNotification(`🎉 Level Up! You are now Level ${newLevel}!`);
+        showNotification(lang === 'ar' ? `🎉 مستوى جديد! أنت الآن مستوى ${newLevel}!` : `🎉 Level Up! You are now Level ${newLevel}!`);
     } else {
         showNotification(`+${amount} XP: ${reason}`);
     }
@@ -188,10 +222,8 @@ const App: React.FC = () => {
             a.id === achievementId ? { ...a, unlocked: true } : a
          );
          setUser({ ...currentUser, achievements: updatedAchievements });
-         showNotification(`🏆 Achievement Unlocked: ${exists.title}!`);
-         addXP(100, 'Achievement Unlocked');
-     } else {
-         setUser(currentUser);
+         showNotification(lang === 'ar' ? `🏆 إنجاز جديد: ${exists.title}!` : `🏆 Achievement Unlocked: ${exists.title}!`);
+         addXP(100, lang === 'ar' ? 'فتح إنجاز' : 'Achievement Unlocked');
      }
   };
 
@@ -200,21 +232,18 @@ const App: React.FC = () => {
       if (!task || !user) return;
 
       const isCompleting = !task.completed;
-      
       setTasks(tasks.map(t => t.id === taskId ? { ...t, completed: isCompleting } : t));
 
       if (isCompleting) {
-          addXP(50, 'Task Completed');
+          addXP(50, lang === 'ar' ? 'إتمام مهمة' : 'Task Completed');
           const completedCount = tasks.filter(t => t.completed).length + 1;
-          if (completedCount >= 3) {
-              unlockAchievement(user, '5');
-          }
+          if (completedCount >= 3) unlockAchievement(user, '5');
       }
   };
 
   const handleAddTask = (newTask: Task) => {
       setTasks([...tasks, newTask]);
-      showNotification("Task Added to Plan");
+      showNotification(lang === 'ar' ? "تمت إضافة المهمة" : "Task Added to Plan");
   };
 
   const handleDeleteTask = (taskId: string) => {
@@ -226,7 +255,7 @@ const App: React.FC = () => {
       const newPost: Post = {
           id: Date.now().toString(),
           author: user.name,
-          avatar: 'https://picsum.photos/200', // User avatar
+          avatar: user.avatar || 'https://picsum.photos/200', 
           content,
           likes: 0,
           comments: 0,
@@ -235,13 +264,13 @@ const App: React.FC = () => {
           isUserPost: true
       };
       setPosts([newPost, ...posts]);
-      addXP(30, 'Community Post Created');
+      addXP(30, lang === 'ar' ? 'نشر في المجتمع' : 'Community Post Created');
       unlockAchievement(user, '4');
   };
 
   const handlePomodoroComplete = () => {
       if (user) {
-          addXP(100, 'Pomodoro Session Finished');
+          addXP(100, lang === 'ar' ? 'جلسة بومودورو' : 'Pomodoro Session Finished');
           unlockAchievement(user, '3');
       }
   };
@@ -249,7 +278,7 @@ const App: React.FC = () => {
   const renderScreen = () => {
     switch (screen) {
       case Screen.AUTH:
-        return <Auth onLogin={handleLogin} />;
+        return <Auth onLogin={handleLogin} lang={lang} setLang={setLang} />;
       case Screen.DASHBOARD:
         return user ? (
             <Dashboard 
@@ -259,6 +288,7 @@ const App: React.FC = () => {
                 onPomodoroComplete={handlePomodoroComplete}
                 doNotDisturb={doNotDisturb}
                 setDoNotDisturb={setDoNotDisturb}
+                lang={lang}
             />
         ) : null;
       case Screen.QUIZ:
@@ -276,7 +306,11 @@ const App: React.FC = () => {
       case Screen.PROGRESS:
         return user ? <Progress user={user} tasks={tasks} /> : null;
       case Screen.COMMUNITY:
-        return user ? <Community user={user} posts={posts} onAddPost={handleAddPost} /> : null;
+        return user ? <Community user={user} posts={posts} onAddPost={handleAddPost} lang={lang} /> : null;
+      case Screen.FLASHCARDS:
+        return user ? <Flashcards user={user} decks={decks} onUpdateDecks={setDecks} onAddXP={addXP} /> : null;
+      case Screen.EXAM_GENERATOR:
+        return user ? <ExamGenerator user={user} lang={lang} onAddXP={addXP} /> : null;
       case Screen.SETTINGS:
         return user ? (
             <Settings 
@@ -288,21 +322,22 @@ const App: React.FC = () => {
                 doNotDisturb={doNotDisturb}
                 setDoNotDisturb={setDoNotDisturb}
                 installApp={deferredPrompt ? handleInstallApp : undefined}
+                onUpdateUser={handleUpdateUser}
+                lang={lang}
             />
         ) : null;
       default:
-        return <Auth onLogin={handleLogin} />;
+        return <Auth onLogin={handleLogin} lang={lang} setLang={setLang} />;
     }
   };
 
   return (
-    <Layout currentScreen={screen} setScreen={setScreen}>
+    <Layout currentScreen={screen} setScreen={setScreen} lang={lang}>
       {renderScreen()}
       
-      {/* Global Notification Toast */}
       {notification && (
-          <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-[100] animate-float">
-              <div className="bg-space-800/90 backdrop-blur-md border border-neon-cyan/50 text-white px-6 py-3 rounded-full shadow-[0_0_20px_rgba(0,240,255,0.3)] flex items-center gap-3">
+          <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-[100] animate-float w-11/12 max-w-md">
+              <div className="bg-space-800/90 backdrop-blur-md border border-neon-cyan/50 text-white px-6 py-4 rounded-2xl shadow-[0_0_20px_rgba(0,240,255,0.3)] flex items-center gap-3">
                   <span className="text-xl">✨</span>
                   <span className="font-medium">{notification}</span>
               </div>

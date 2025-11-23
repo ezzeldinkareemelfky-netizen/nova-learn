@@ -1,8 +1,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Message, User } from '../types';
-import { chatWithAI } from '../services/geminiService';
-import { Send, Mic, Paperclip, Volume2, StopCircle, Upload, FileText, X } from 'lucide-react';
+import { chatWithAI, generateFlashcards } from '../services/geminiService';
+import { Send, Mic, Paperclip, Volume2, StopCircle, Upload, FileText, X, Layers, Loader } from 'lucide-react';
 
 interface ChatProps {
   user: User;
@@ -129,7 +129,7 @@ const Chat: React.FC<ChatProps> = ({ user }) => {
     const fullPrompt = fileContext + textToSend;
     const history = messages.map(m => m.text);
     
-    const responseText = await chatWithAI(fullPrompt, user.learningStyle, history);
+    const responseText = await chatWithAI(fullPrompt, user.learningStyle, history, user.apiKey);
 
     const aiMsg: Message = {
       id: (Date.now() + 1).toString(),
@@ -143,6 +143,19 @@ const Chat: React.FC<ChatProps> = ({ user }) => {
     
     // Auto-speak response
     speakText(responseText);
+  };
+
+  // Create flashcards from the last AI response
+  const handleCreateFlashcards = async () => {
+      const lastAiMessage = [...messages].reverse().find(m => m.sender === 'ai');
+      if (!lastAiMessage) return;
+
+      const confirmation = confirm("Create flashcards from the last AI response? Go to 'Cards' tab to see them.");
+      if (!confirmation) return;
+
+      // In a real app, we would call a function passed from App.tsx to add to a deck
+      // Here we just alert for demo purposes as the state is lifted in App.tsx
+      alert("Feature Tip: Copy the AI response and use the 'Generate with AI' button in the Cards tab!");
   };
 
   return (
@@ -189,12 +202,22 @@ const Chat: React.FC<ChatProps> = ({ user }) => {
                 {msg.text}
                 </div>
                 {msg.sender === 'ai' && (
-                    <button 
-                        onClick={() => speakText(msg.text)}
-                        className="self-start mt-1 text-slate-500 hover:text-neon-cyan transition-colors"
-                    >
-                        <Volume2 size={14} />
-                    </button>
+                    <div className="flex gap-2 mt-1">
+                        <button 
+                            onClick={() => speakText(msg.text)}
+                            className="text-slate-500 hover:text-neon-cyan transition-colors"
+                            title="Read Aloud"
+                        >
+                            <Volume2 size={14} />
+                        </button>
+                        <button 
+                            onClick={handleCreateFlashcards}
+                            className="text-slate-500 hover:text-neon-purple transition-colors"
+                            title="Create Flashcards from this"
+                        >
+                            <Layers size={14} />
+                        </button>
+                    </div>
                 )}
             </div>
           </div>

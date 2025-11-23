@@ -1,7 +1,8 @@
 
-import React from 'react';
-import { User, Screen, Task } from '../types';
-import { Moon, Globe, RefreshCcw, Bell, LogOut, User as UserIcon, Award, Shield, ChevronRight, ArrowLeft, Calendar as CalendarIcon, ToggleLeft, ToggleRight, Download } from 'lucide-react';
+import React, { useState } from 'react';
+import { User, Task } from '../types';
+import { Globe, RefreshCcw, LogOut, Award, Shield, ChevronRight, ArrowLeft, Calendar as CalendarIcon, ToggleLeft, ToggleRight, Download, Key, Image } from 'lucide-react';
+import { translations, Language } from '../utils/translations';
 
 interface SettingsProps {
   user: User;
@@ -12,22 +13,42 @@ interface SettingsProps {
   doNotDisturb: boolean;
   setDoNotDisturb: (val: boolean) => void;
   installApp?: () => void;
+  onUpdateUser: (user: User) => void;
+  lang: Language;
 }
 
-const Settings: React.FC<SettingsProps> = ({ user, tasks, onLogout, onRetakeQuiz, onBack, doNotDisturb, setDoNotDisturb, installApp }) => {
+const Settings: React.FC<SettingsProps> = ({ user, tasks, onLogout, onRetakeQuiz, onBack, doNotDisturb, setDoNotDisturb, installApp, onUpdateUser, lang }) => {
+  const [apiKey, setApiKey] = useState(user.apiKey || '');
+  const [avatarUrl, setAvatarUrl] = useState(user.avatar || '');
+  const [isEditingKey, setIsEditingKey] = useState(false);
+  const [isEditingAvatar, setIsEditingAvatar] = useState(false);
   
+  const t = translations[lang];
+
+  const handleSaveProfile = () => {
+      onUpdateUser({
+          ...user,
+          apiKey: apiKey,
+          avatar: avatarUrl
+      });
+      setIsEditingKey(false);
+      setIsEditingAvatar(false);
+  };
+
+  const handleLanguageToggle = () => {
+      const newLang = lang === 'en' ? 'ar' : 'en';
+      onUpdateUser({
+          ...user,
+          language: newLang
+      });
+  };
+
   const handleCalendarSync = () => {
       // Generate ICS file content
       let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//NovaLearn//StudyPlan//EN\n";
       
       tasks.forEach(task => {
-          // For demo purposes, we assume tasks are 'today'. In a real app, we'd parse task.time properly
-          const now = new Date();
-          const year = now.getFullYear();
-          const month = (now.getMonth() + 1).toString().padStart(2, '0');
-          const day = now.getDate().toString().padStart(2, '0');
-          const dateStr = `${year}${month}${day}`;
-          
+          const dateStr = task.date.replace(/-/g, '');
           icsContent += "BEGIN:VEVENT\n";
           icsContent += `SUMMARY:${task.title} (${task.subject})\n`;
           icsContent += `DTSTART;VALUE=DATE:${dateStr}\n`; 
@@ -58,10 +79,10 @@ const Settings: React.FC<SettingsProps> = ({ user, tasks, onLogout, onRetakeQuiz
         </div>
         {toggle !== undefined ? (
             <div className={toggle ? "text-neon-cyan" : "text-slate-600"}>
-                {toggle ? <ToggleRight size={28} /> : <ToggleLeft size={28} />}
+                {toggle ? <ToggleRight size={28} className="rotate-rtl-180" /> : <ToggleLeft size={28} className="rotate-rtl-180" />}
             </div>
         ) : (
-            value ? <span className="text-slate-400 text-sm">{value}</span> : <ChevronRight size={16} className="text-slate-600" />
+            value ? <span className="text-slate-400 text-sm">{value}</span> : <ChevronRight size={16} className="text-slate-600 rotate-rtl-180" />
         )}
     </div>
   );
@@ -69,10 +90,10 @@ const Settings: React.FC<SettingsProps> = ({ user, tasks, onLogout, onRetakeQuiz
   return (
     <div className="p-6 pt-10 pb-24">
       <div className="flex items-center mb-6">
-          <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-white/10 mr-2">
-              <ArrowLeft size={24} />
+          <button onClick={onBack} className="p-2 rounded-full hover:bg-white/10 ltr:mr-2 rtl:ml-2">
+              <ArrowLeft size={24} className="rotate-rtl-180" />
           </button>
-          <h2 className="text-2xl font-bold">My Profile</h2>
+          <h2 className="text-2xl font-bold">{t.profile}</h2>
       </div>
 
       {/* Profile & Gamification Card */}
@@ -81,15 +102,15 @@ const Settings: React.FC<SettingsProps> = ({ user, tasks, onLogout, onRetakeQuiz
           
           <div className="flex items-center gap-5 mb-6 relative z-10">
               <div className="w-20 h-20 rounded-full bg-space-900 overflow-hidden border-4 border-neon-purple/50 shadow-lg shadow-neon-purple/20">
-                  <img src="https://picsum.photos/200" alt="Avatar" className="w-full h-full object-cover" />
+                  <img src={user.avatar || "https://picsum.photos/200"} alt="Avatar" className="w-full h-full object-cover" />
               </div>
-              <div>
+              <div className="flex-1">
                   <h3 className="font-bold text-xl">{user.name}</h3>
                   <div className="flex items-center gap-2 mt-1">
                       <span className="text-xs font-bold bg-neon-cyan/20 text-neon-cyan px-2 py-1 rounded-md border border-neon-cyan/30">
-                          Lvl {user.level}
+                          {t.lvl} {user.level}
                       </span>
-                      <span className="text-slate-400 text-sm">{user.learningStyle} Learner</span>
+                      <span className="text-slate-400 text-sm">{user.learningStyle}</span>
                   </div>
               </div>
           </div>
@@ -97,8 +118,8 @@ const Settings: React.FC<SettingsProps> = ({ user, tasks, onLogout, onRetakeQuiz
           {/* XP Bar */}
           <div className="relative z-10">
               <div className="flex justify-between text-xs mb-2 font-medium">
-                  <span className="text-slate-300">{user.points} XP</span>
-                  <span className="text-slate-500">Next Level: {user.level * 1000 + 1000} XP</span>
+                  <span className="text-slate-300">{user.points} {t.xp}</span>
+                  <span className="text-slate-500">{t.nextLevel}: {user.level * 1000 + 1000}</span>
               </div>
               <div className="w-full h-3 bg-space-900 rounded-full overflow-hidden border border-white/5">
                   <div 
@@ -109,14 +130,71 @@ const Settings: React.FC<SettingsProps> = ({ user, tasks, onLogout, onRetakeQuiz
           </div>
       </div>
 
+      {/* Customization Section */}
+      <div className="mb-6 bg-space-800/50 rounded-3xl p-4 border border-white/5">
+          <h3 className="text-slate-500 uppercase tracking-wider text-xs font-bold mb-3 ml-1">{t.accountSettings}</h3>
+          
+          {/* Avatar Edit */}
+          <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2 text-sm text-slate-300">
+                      <Image size={16} /> {t.profilePic}
+                  </div>
+                  <button 
+                    onClick={() => isEditingAvatar ? handleSaveProfile() : setIsEditingAvatar(true)}
+                    className="text-xs text-neon-cyan hover:underline"
+                  >
+                      {isEditingAvatar ? t.save : t.edit}
+                  </button>
+              </div>
+              {isEditingAvatar && (
+                  <input 
+                    type="text" 
+                    value={avatarUrl}
+                    onChange={(e) => setAvatarUrl(e.target.value)}
+                    placeholder="https://example.com/my-photo.jpg"
+                    className="w-full bg-space-900 border border-white/10 rounded-xl p-3 text-sm text-white focus:border-neon-cyan focus:outline-none"
+                  />
+              )}
+          </div>
+
+          {/* API Key Edit */}
+          <div>
+              <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2 text-sm text-slate-300">
+                      <Key size={16} /> {t.apiKey}
+                  </div>
+                  <button 
+                    onClick={() => isEditingKey ? handleSaveProfile() : setIsEditingKey(true)}
+                    className="text-xs text-neon-cyan hover:underline"
+                  >
+                      {isEditingKey ? t.save : t.edit}
+                  </button>
+              </div>
+              {isEditingKey ? (
+                  <input 
+                    type="text" 
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder="AIzaSy..."
+                    className="w-full bg-space-900 border border-white/10 rounded-xl p-3 text-sm text-white focus:border-neon-cyan focus:outline-none font-mono"
+                  />
+              ) : (
+                  <p className="text-xs text-slate-500 font-mono bg-space-900 p-2 rounded-lg truncate">
+                      {user.apiKey ? '••••••••••••••••••••••' : 'No Key Set'}
+                  </p>
+              )}
+          </div>
+      </div>
+
       {/* Achievements Grid */}
       <div className="mb-8">
           <div className="flex justify-between items-end mb-4">
               <h3 className="text-lg font-bold flex items-center gap-2">
                   <Award size={20} className="text-yellow-500" />
-                  Achievements
+                  {t.achievements}
               </h3>
-              <span className="text-xs text-slate-400">{user.achievements.filter(a => a.unlocked).length}/{user.achievements.length} Unlocked</span>
+              <span className="text-xs text-slate-400">{user.achievements.filter(a => a.unlocked).length}/{user.achievements.length} {t.unlocked}</span>
           </div>
           
           <div className="grid grid-cols-3 gap-3">
@@ -144,27 +222,32 @@ const Settings: React.FC<SettingsProps> = ({ user, tasks, onLogout, onRetakeQuiz
             className="w-full mb-6 p-4 rounded-2xl bg-gradient-to-r from-neon-cyan to-blue-500 text-black font-bold flex items-center justify-center gap-2 shadow-lg hover:scale-[1.02] transition-transform"
           >
               <Download size={20} />
-              Install App on Home Screen
+              {t.installApp}
           </button>
       )}
 
       {/* Settings Options */}
-      <h3 className="text-slate-500 uppercase tracking-wider text-xs font-bold mb-3 ml-1">Preferences</h3>
+      <h3 className="text-slate-500 uppercase tracking-wider text-xs font-bold mb-3 ml-1">{t.preferences}</h3>
       <div className="space-y-1">
           <SettingItem 
             icon={Shield} 
-            label="Do Not Disturb" 
+            label={t.doNotDisturb} 
             toggle={doNotDisturb}
             onClick={() => setDoNotDisturb(!doNotDisturb)} 
           />
           <SettingItem 
             icon={CalendarIcon} 
-            label="Sync to Google Calendar" 
-            value="Download .ics" 
+            label={t.syncCalendar} 
+            value="ICS" 
             onClick={handleCalendarSync}
           />
-          <SettingItem icon={Globe} label="Language" value="English" />
-          <SettingItem icon={RefreshCcw} label="Retake Learning Style Test" onClick={onRetakeQuiz} />
+          <SettingItem 
+            icon={Globe} 
+            label={t.language} 
+            value={lang === 'en' ? 'English' : 'العربية'} 
+            onClick={handleLanguageToggle}
+          />
+          <SettingItem icon={RefreshCcw} label={t.retakeTest} onClick={onRetakeQuiz} />
       </div>
 
       <div className="mt-8 mb-8">
@@ -172,18 +255,8 @@ const Settings: React.FC<SettingsProps> = ({ user, tasks, onLogout, onRetakeQuiz
             onClick={onLogout}
             className="w-full py-4 rounded-2xl bg-red-500/10 text-red-400 border border-red-500/20 font-bold hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2"
           >
-              <LogOut size={20} />
-              Log Out
-          </button>
-          
-          <button 
-            onClick={() => {
-                localStorage.clear();
-                window.location.reload();
-            }}
-            className="w-full mt-4 py-2 text-xs text-slate-500 hover:text-slate-300"
-          >
-              Clear App Data (Debug)
+              <LogOut size={20} className="rotate-rtl-180" />
+              {t.logout}
           </button>
       </div>
     </div>

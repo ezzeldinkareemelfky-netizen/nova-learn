@@ -2,19 +2,23 @@
 import React, { useState } from 'react';
 import { Post, User } from '../types';
 import { Heart, MessageSquare, Share2, Plus, Search, X, Send } from 'lucide-react';
+import { translations, Language } from '../utils/translations';
 
 interface CommunityProps {
   user: User;
   posts: Post[];
   onAddPost: (content: string, tag: string) => void;
+  lang: Language;
 }
 
-const Community: React.FC<CommunityProps> = ({ user, posts, onAddPost }) => {
+const Community: React.FC<CommunityProps> = ({ user, posts, onAddPost, lang }) => {
   const [activeTab, setActiveTab] = useState<'all' | 'squad' | 'style'>('all');
   const [showPostModal, setShowPostModal] = useState(false);
   const [newPostContent, setNewPostContent] = useState('');
   const [newPostTag, setNewPostTag] = useState('');
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+
+  const t = translations[lang];
 
   const handleLike = (id: string) => {
     const newLiked = new Set(likedPosts);
@@ -40,7 +44,7 @@ const Community: React.FC<CommunityProps> = ({ user, posts, onAddPost }) => {
       {/* Header */}
       <div className="p-6 pb-2 pt-10">
         <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">Cosmic Forum</h2>
+            <h2 className="text-2xl font-bold">{t.forumTitle}</h2>
             <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
                 <Search size={20} className="text-slate-300" />
             </div>
@@ -52,19 +56,19 @@ const Community: React.FC<CommunityProps> = ({ user, posts, onAddPost }) => {
                 onClick={() => setActiveTab('all')}
                 className={`px-5 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'all' ? 'bg-neon-blue text-white shadow-lg shadow-neon-blue/25' : 'bg-white/5 text-slate-400 border border-white/10'}`}
             >
-                All Posts
+                {t.allPosts}
             </button>
             <button 
                 onClick={() => setActiveTab('style')}
                 className={`px-5 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'style' ? 'bg-neon-purple text-white shadow-lg shadow-neon-purple/25' : 'bg-white/5 text-slate-400 border border-white/10'}`}
             >
-                {user.learningStyle} Squad
+                {user.learningStyle} {t.squad}
             </button>
             <button 
                 onClick={() => setActiveTab('squad')}
                 className={`px-5 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'squad' ? 'bg-neon-cyan text-black shadow-lg shadow-neon-cyan/25' : 'bg-white/5 text-slate-400 border border-white/10'}`}
             >
-                My Study Groups
+                {t.myGroups}
             </button>
         </div>
       </div>
@@ -113,7 +117,7 @@ const Community: React.FC<CommunityProps> = ({ user, posts, onAddPost }) => {
       {/* FAB */}
       <button 
         onClick={() => setShowPostModal(true)}
-        className="absolute bottom-24 right-6 w-14 h-14 rounded-full bg-gradient-to-r from-neon-cyan to-neon-blue flex items-center justify-center shadow-lg shadow-neon-blue/40 text-white hover:scale-105 active:scale-95 transition-transform z-30"
+        className="absolute bottom-24 right-6 rtl:left-6 rtl:right-auto w-14 h-14 rounded-full bg-gradient-to-r from-neon-cyan to-neon-blue flex items-center justify-center shadow-lg shadow-neon-blue/40 text-white hover:scale-105 active:scale-95 transition-transform z-30"
       >
           <Plus size={28} />
       </button>
@@ -124,20 +128,20 @@ const Community: React.FC<CommunityProps> = ({ user, posts, onAddPost }) => {
             <div className="bg-space-800 border border-white/10 w-full max-w-md rounded-3xl p-6 relative">
                 <button 
                     onClick={() => setShowPostModal(false)}
-                    className="absolute top-4 right-4 text-slate-400 hover:text-white"
+                    className="absolute top-4 right-4 rtl:left-4 rtl:right-auto text-slate-400 hover:text-white"
                 >
                     <X size={24} />
                 </button>
-                <h3 className="text-xl font-bold mb-4">Create Post</h3>
+                <h3 className="text-xl font-bold mb-4">{t.createPost}</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <textarea 
                         value={newPostContent}
                         onChange={e => setNewPostContent(e.target.value)}
-                        placeholder="Share your study tips or ask a question..."
+                        placeholder={t.postPlaceholder}
                         className="w-full h-32 bg-space-700 border border-white/10 rounded-xl p-4 focus:border-neon-cyan focus:outline-none text-white resize-none"
                     />
                     <div>
-                        <label className="text-xs text-slate-400 ml-1">Tag</label>
+                        <label className="text-xs text-slate-400 ml-1">{t.tag}</label>
                         <input 
                             type="text"
                             value={newPostTag}
@@ -151,8 +155,8 @@ const Community: React.FC<CommunityProps> = ({ user, posts, onAddPost }) => {
                         disabled={!newPostContent}
                         className="w-full bg-gradient-to-r from-neon-blue to-neon-purple text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:shadow-lg transition-all disabled:opacity-50"
                     >
-                        <Send size={18} />
-                        Post
+                        <Send size={18} className="rtl:rotate-180" />
+                        {t.postBtn}
                     </button>
                 </form>
             </div>

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, MoreVertical, CheckCircle, Circle, X, Trash2 } from 'lucide-react';
 import { Task } from '../types';
 
@@ -10,13 +10,36 @@ interface StudyPlanProps {
   onDeleteTask: (id: string) => void;
 }
 
-const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
 const StudyPlan: React.FC<StudyPlanProps> = ({ tasks, onToggleTask, onAddTask, onDeleteTask }) => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskSubject, setNewTaskSubject] = useState('');
   const [newTaskTime, setNewTaskTime] = useState('');
+  const [selectedDate, setSelectedDate] = useState<string>('');
+
+  // Generate calendar dates (Current week)
+  const [calendarDays, setCalendarDays] = useState<{dayName: string, dayNum: number, fullDate: string}[]>([]);
+
+  useEffect(() => {
+      const days = [];
+      const today = new Date();
+      // Start from 2 days ago to show recent history, up to 4 days ahead
+      for (let i = -2; i <= 4; i++) {
+          const d = new Date();
+          d.setDate(today.getDate() + i);
+          
+          const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+          const dayNum = d.getDate();
+          const fullDate = d.toISOString().split('T')[0]; // YYYY-MM-DD
+          days.push({ dayName, dayNum, fullDate });
+      }
+      setCalendarDays(days);
+      
+      // Default select today
+      if (!selectedDate) {
+        setSelectedDate(today.toISOString().split('T')[0]);
+      }
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
@@ -26,6 +49,7 @@ const StudyPlan: React.FC<StudyPlanProps> = ({ tasks, onToggleTask, onAddTask, o
           id: Date.now().toString(),
           title: newTaskTitle,
           subject: newTaskSubject,
+          date: selectedDate, // Assign to currently selected day
           time: newTaskTime || 'Anytime',
           duration: 1,
           completed: false,
@@ -38,6 +62,8 @@ const StudyPlan: React.FC<StudyPlanProps> = ({ tasks, onToggleTask, onAddTask, o
       setNewTaskSubject('');
       setNewTaskTime('');
   };
+
+  const filteredTasks = tasks.filter(t => t.date === selectedDate);
 
   return (
     <div className="p-6 pt-10 pb-24">
@@ -52,27 +78,38 @@ const StudyPlan: React.FC<StudyPlanProps> = ({ tasks, onToggleTask, onAddTask, o
       </div>
 
       {/* Calendar Strip */}
-      <div className="flex justify-between items-center mb-8 overflow-x-auto no-scrollbar pb-2">
-        {days.map((day, idx) => (
-            <div key={day} className={`flex flex-col items-center min-w-[3.5rem] p-3 rounded-2xl border ${idx === 2 ? 'bg-neon-purple border-neon-purple shadow-lg shadow-neon-purple/40' : 'bg-space-800 border-white/5'}`}>
-                <span className={`text-xs mb-1 ${idx === 2 ? 'text-white' : 'text-slate-400'}`}>{day}</span>
-                <span className="font-bold text-lg">{8 + idx}</span>
-            </div>
-        ))}
+      <div className="flex justify-between items-center mb-8 overflow-x-auto no-scrollbar pb-2 gap-2">
+        {calendarDays.map((day, idx) => {
+            const isSelected = day.fullDate === selectedDate;
+            const isToday = day.fullDate === new Date().toISOString().split('T')[0];
+
+            return (
+                <button 
+                    key={day.fullDate} 
+                    onClick={() => setSelectedDate(day.fullDate)}
+                    className={`flex flex-col items-center min-w-[3.5rem] p-3 rounded-2xl border transition-all ${isSelected ? 'bg-neon-purple border-neon-purple shadow-lg shadow-neon-purple/40 scale-105' : 'bg-space-800 border-white/5 hover:bg-space-700'}`}
+                >
+                    <span className={`text-xs mb-1 ${isSelected ? 'text-white' : 'text-slate-400'}`}>{day.dayName}</span>
+                    <span className="font-bold text-lg">{day.dayNum}</span>
+                    {isToday && !isSelected && <div className="w-1 h-1 bg-neon-cyan rounded-full mt-1"></div>}
+                </button>
+            );
+        })}
       </div>
 
       {/* Timeline */}
-      <div className="space-y-4 relative">
+      <div className="space-y-4 relative min-h-[300px]">
           <div className="absolute left-4 top-0 bottom-0 w-[1px] bg-slate-700/50"></div>
           
-          {tasks.length === 0 && (
-              <div className="text-center py-10 text-slate-500">
-                  <p>No tasks yet. Add one to get started!</p>
+          {filteredTasks.length === 0 && (
+              <div className="text-center py-10 text-slate-500 ml-8">
+                  <p>No tasks for this day.</p>
+                  <p className="text-xs mt-1">Tap + to add a study session.</p>
               </div>
           )}
 
-          {tasks.map((task) => (
-              <div key={task.id} className="relative pl-12 group">
+          {filteredTasks.map((task) => (
+              <div key={task.id} className="relative pl-12 group animate-slideUp">
                   {/* Connector Dot */}
                   <div 
                     onClick={() => onToggleTask(task.id)}
@@ -105,8 +142,6 @@ const StudyPlan: React.FC<StudyPlanProps> = ({ tasks, onToggleTask, onAddTask, o
                                 </button>
                             </div>
                         </div>
-                        {/* Decorative circles */}
-                        {!task.completed && <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>}
                   </div>
               </div>
           ))}
@@ -133,7 +168,7 @@ const StudyPlan: React.FC<StudyPlanProps> = ({ tasks, onToggleTask, onAddTask, o
                 >
                     <X size={24} />
                 </button>
-                <h3 className="text-xl font-bold mb-6">Add Study Task</h3>
+                <h3 className="text-xl font-bold mb-6">Add Task for {new Date(selectedDate).toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'})}</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="text-xs text-slate-400 ml-1">Title</label>
