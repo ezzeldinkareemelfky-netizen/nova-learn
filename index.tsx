@@ -1,8 +1,7 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import './index.css'; 
+// index.css is removed because we are using Tailwind CDN and the file does not exist, causing crash.
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

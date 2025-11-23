@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -17,6 +16,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
 
     <title>Nova Learn</title>
+    
+    <!-- Polyfill process to prevent "process is not defined" crash on GitHub Pages -->
+    <script>
+      window.process = { env: { NODE_ENV: 'production' } };
+    </script>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -105,7 +110,16 @@
 </script>
 </head>
   <body>
-    <div id="root" class="h-full w-full"></div>
+    <div id="root" class="h-full w-full">
+        <!-- Initial Loading State to prevent black screen while React loads -->
+        <div style="height: 100%; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #0B0F19; color: white;">
+            <div style="font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #00F0FF;">Nova Learn</div>
+            <div style="width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1); border-top-color: #B026FF; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            <style>
+                @keyframes spin { to { transform: rotate(360deg); } }
+            </style>
+        </div>
+    </div>
     
     <!-- Error Handler to debug black screens -->
     <div id="error-display" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:black; color:red; padding:20px; z-index:9999; overflow:auto;">
