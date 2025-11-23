@@ -181,16 +181,20 @@ const Flashcards: React.FC<FlashcardsProps> = ({ user, decks, onUpdateDecks, onA
                       >
                           <div className={`absolute inset-0 w-full h-full transition-all duration-500 preserve-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
                               {/* Front */}
-                              <div className="absolute inset-0 w-full h-full bg-space-800 border border-white/10 rounded-3xl p-8 flex flex-col items-center justify-center text-center shadow-2xl backface-hidden">
+                              <div className="absolute inset-0 w-full h-full bg-space-800 border border-white/10 rounded-3xl p-8 flex flex-col items-center justify-center text-center shadow-2xl backface-hidden overflow-hidden">
                                   <span className="absolute top-6 left-6 text-xs font-bold text-neon-cyan uppercase tracking-widest">Question</span>
-                                  <p className="text-2xl font-bold leading-relaxed">{studyQueue[currentCardIndex].front}</p>
+                                  <div className="w-full max-h-[70%] overflow-y-auto no-scrollbar flex flex-col justify-center">
+                                    <p className="text-2xl font-bold leading-relaxed">{studyQueue[currentCardIndex].front}</p>
+                                  </div>
                                   <p className="absolute bottom-6 text-slate-500 text-sm animate-pulse">Tap to flip</p>
                               </div>
 
                               {/* Back */}
-                              <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-indigo-900 to-space-800 border border-neon-purple/30 rounded-3xl p-8 flex flex-col items-center justify-center text-center shadow-2xl backface-hidden rotate-y-180">
+                              <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-indigo-900 to-space-800 border border-neon-purple/30 rounded-3xl p-8 flex flex-col items-center justify-center text-center shadow-2xl backface-hidden rotate-y-180 overflow-hidden">
                                   <span className="absolute top-6 left-6 text-xs font-bold text-neon-purple uppercase tracking-widest">Answer</span>
-                                  <p className="text-xl leading-relaxed text-slate-100">{studyQueue[currentCardIndex].back}</p>
+                                  <div className="w-full max-h-[80%] overflow-y-auto no-scrollbar flex flex-col justify-center">
+                                    <p className="text-xl leading-relaxed text-slate-100">{studyQueue[currentCardIndex].back}</p>
+                                  </div>
                               </div>
                           </div>
                       </div>

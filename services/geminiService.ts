@@ -102,8 +102,9 @@ export const generateFlashcards = async (content: string, count: number = 5, api
     try {
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
-            contents: `Create ${count} flashcards from the following text. 
+            contents: `Create ${count} concise flashcards from the following text. 
             Respond in ${language === 'ar' ? 'Arabic' : 'English'}.
+            Keep questions and answers short and clear (max 30 words).
             Return ONLY a valid JSON array of objects with 'front' (question) and 'back' (answer) properties.
             Do not add markdown formatting.
             
