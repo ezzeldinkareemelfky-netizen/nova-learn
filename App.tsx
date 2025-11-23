@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from './components/Layout';
 import Auth from './views/Auth';
@@ -21,7 +20,8 @@ const safeJSONParse = (key: string, fallback: any) => {
     if (!item) return fallback;
     // Handle 'undefined' string which sometimes gets saved erroneously
     if (item === 'undefined' || item === 'null') return fallback;
-    return JSON.parse(item);
+    const parsed = JSON.parse(item);
+    return parsed === null ? fallback : parsed;
   } catch (e) {
     console.warn(`Failed to parse ${key}, resetting to default.`);
     return fallback;
@@ -58,6 +58,16 @@ const INITIAL_POSTS: Post[] = [
     tag: 'Study Group',
     timestamp: '4h ago'
   }
+];
+
+// Fallback achievements for migration
+const DEFAULT_ACHIEVEMENTS: Achievement[] = [
+    { id: '1', title: 'Nova Novice', description: 'Created your account', icon: '🚀', unlocked: true },
+    { id: '2', title: 'Style Seeker', description: 'Completed learning style test', icon: '🧠', unlocked: false },
+    { id: '3', title: 'Focus Master', description: 'Complete a Pomodoro session', icon: '⏱️', unlocked: false },
+    { id: '4', title: 'Social Star', description: 'Make your first community post', icon: '🌟', unlocked: false },
+    { id: '5', title: 'Task Titan', description: 'Complete 3 study tasks', icon: '✅', unlocked: false },
+    { id: '6', title: 'Streak Week', description: '7 day login streak', icon: '🔥', unlocked: false },
 ];
 
 const App: React.FC = () => {
@@ -115,10 +125,16 @@ const App: React.FC = () => {
             const savedUserWrapper = usersDb[sessionEmail];
             
             if (savedUserWrapper && savedUserWrapper.user) {
-                setUser(savedUserWrapper.user);
-                setLang(savedUserWrapper.user.language || 'en'); // Load saved language
+                // MIGRATION: Ensure achievements exist
+                const restoredUser = savedUserWrapper.user;
+                if (!restoredUser.achievements) {
+                    restoredUser.achievements = DEFAULT_ACHIEVEMENTS;
+                }
+
+                setUser(restoredUser);
+                setLang(restoredUser.language || 'en'); // Load saved language
                 loadUserData(sessionEmail);
-                if (savedUserWrapper.user.learningStyle === LearningStyle.UNDEFINED) {
+                if (restoredUser.learningStyle === LearningStyle.UNDEFINED) {
                     setScreen(Screen.QUIZ);
                 } else {
                     setScreen(Screen.DASHBOARD);
@@ -196,6 +212,11 @@ const App: React.FC = () => {
   };
 
   const handleLogin = (loggedInUser: User) => {
+    // Ensure achievements exist (migration for old users)
+    if (!loggedInUser.achievements) {
+        loggedInUser.achievements = DEFAULT_ACHIEVEMENTS;
+    }
+
     setUser(loggedInUser);
     setLang(loggedInUser.language || 'en'); // Set language on login
     localStorage.setItem('nova_active_session', loggedInUser.email);
@@ -248,6 +269,8 @@ const App: React.FC = () => {
   };
 
   const unlockAchievement = (currentUser: User, achievementId: string) => {
+     if (!currentUser.achievements) return;
+     
      const exists = currentUser.achievements.find(a => a.id === achievementId);
      if (exists && !exists.unlocked) {
          const updatedAchievements = currentUser.achievements.map(a => 
