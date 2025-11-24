@@ -1,5 +1,4 @@
-
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { LearningStyle, Question } from "../types";
 
 // Helper to get client with the correct key safely for browser environments
@@ -9,6 +8,8 @@ const getClient = (userKey?: string) => {
     try {
         if (typeof process !== 'undefined' && process.env) {
             envKey = process.env.API_KEY;
+        } else if ((window as any).process && (window as any).process.env) {
+            envKey = (window as any).process.env.API_KEY;
         }
     } catch (e) {
         // Ignore error if process is accessed in strict browser env
@@ -17,20 +18,19 @@ const getClient = (userKey?: string) => {
     const key = userKey || envKey;
     
     if (!key) return null;
-    return new GoogleGenAI({ apiKey: key });
+    return new GoogleGenerativeAI(key);
 };
 
 export const generateDailyTip = async (style: LearningStyle, apiKey?: string, language: 'en' | 'ar' = 'en'): Promise<string> => {
-  const ai = getClient(apiKey);
-  if (!ai) return language === 'ar' ? "نصيحة: أضف مفتاح API في الإعدادات!" : "Tip: Add your Gemini API Key in Settings!";
+  const genAI = getClient(apiKey);
+  if (!genAI) return language === 'ar' ? "نصيحة: أضف مفتاح API في الإعدادات!" : "Tip: Add your Gemini API Key in Settings!";
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: `Give me a short, one-sentence study tip for a ${style !== LearningStyle.UNDEFINED ? style : 'general'} learner. 
-      Respond in ${language === 'ar' ? 'Arabic' : 'English'}.`,
-    });
-    return response.text || (language === 'ar' ? "ركز على أهدافك اليوم!" : "Focus on your goals today!");
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const result = await model.generateContent(`Give me a short, one-sentence study tip for a ${style !== LearningStyle.UNDEFINED ? style : 'general'} learner. 
+      Respond in ${language === 'ar' ? 'Arabic' : 'English'}.`);
+    const response = await result.response;
+    return response.text() || (language === 'ar' ? "ركز على أهدافك اليوم!" : "Focus on your goals today!");
   } catch (error) {
     console.error("Gemini Error:", error);
     return language === 'ar' ? "الاستمرارية هي مفتاح النجاح." : "Consistency is key to mastery.";
@@ -38,8 +38,8 @@ export const generateDailyTip = async (style: LearningStyle, apiKey?: string, la
 };
 
 export const chatWithAI = async (message: string, style: LearningStyle, history: string[], apiKey?: string, language: 'en' | 'ar' = 'en'): Promise<string> => {
-  const ai = getClient(apiKey);
-  if (!ai) return language === 'ar' ? "الرجاء إضافة مفتاح API في الإعدادات للتحدث مع نوفا." : "Please add your API Key in Settings > Profile to chat with Nova.";
+  const genAI = getClient(apiKey);
+  if (!genAI) return language === 'ar' ? "الرجاء إضافة مفتاح API في الإعدادات للتحدث مع نوفا." : "Please add your API Key in Settings > Profile to chat with Nova.";
 
   const systemInstruction = `You are Nova, an intelligent study assistant. 
   The user is a ${style} learner. 
@@ -52,16 +52,19 @@ export const chatWithAI = async (message: string, style: LearningStyle, history:
 
   try {
     // We pass a limited history to keep context but avoid token limits in this demo
-    const contextMessages = history.slice(-5).join("\n"); 
-    
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: `History:\n${contextMessages}\n\nCurrent Request:\n${message}`,
-      config: {
-        systemInstruction: systemInstruction,
-      }
+    // The new SDK supports chat history nicely
+    const model = genAI.getGenerativeModel({ 
+        model: 'gemini-1.5-flash',
+        systemInstruction: systemInstruction
     });
-    return response.text || (language === 'ar' ? "أنا أعالج طلبك..." : "I'm processing that...");
+
+    // Construct history in the format expected by SDK if needed, or just prompt
+    // For simplicity with single turn logic + context injection used in chat view:
+    const prompt = `History context:\n${history.slice(-5).join("\n")}\n\nCurrent Request:\n${message}`;
+    
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text() || (language === 'ar' ? "أنا أعالج طلبك..." : "I'm processing that...");
   } catch (error) {
     console.error("Gemini Chat Error:", error);
     return language === 'ar' ? "أواجه مشكلة في الاتصال. تحقق من المفتاح." : "I'm having trouble connecting. Please check your API Key.";
@@ -69,25 +72,22 @@ export const chatWithAI = async (message: string, style: LearningStyle, history:
 };
 
 export const analyzeQuiz = async (answers: string[], apiKey?: string): Promise<LearningStyle> => {
-   const ai = getClient(apiKey);
-   if (!ai) {
-     // Fallback mock logic if no API key
+   const genAI = getClient(apiKey);
+   if (!genAI) {
      return LearningStyle.VISUAL; 
    }
 
    try {
+     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
      const prompt = `Analyze these answers to a learning style quiz and return ONLY one of these words: "Visual", "Auditory", or "Kinesthetic". 
      Answers: ${JSON.stringify(answers)}`;
      
-     const response = await ai.models.generateContent({
-       model: 'gemini-2.5-flash',
-       contents: prompt,
-     });
+     const result = await model.generateContent(prompt);
+     const text = result.response.text().trim();
      
-     const text = response.text?.trim();
-     if (text?.includes("Visual")) return LearningStyle.VISUAL;
-     if (text?.includes("Auditory")) return LearningStyle.AUDITORY;
-     if (text?.includes("Kinesthetic")) return LearningStyle.KINESTHETIC;
+     if (text.includes("Visual")) return LearningStyle.VISUAL;
+     if (text.includes("Auditory")) return LearningStyle.AUDITORY;
+     if (text.includes("Kinesthetic")) return LearningStyle.KINESTHETIC;
      
      return LearningStyle.VISUAL; // Default
    } catch (error) {
@@ -96,35 +96,37 @@ export const analyzeQuiz = async (answers: string[], apiKey?: string): Promise<L
 };
 
 export const generateFlashcards = async (content: string, count: number = 5, apiKey?: string, language: 'en' | 'ar' = 'en'): Promise<{front: string, back: string}[]> => {
-    const ai = getClient(apiKey);
-    if (!ai) return [];
+    const genAI = getClient(apiKey);
+    if (!genAI) return [];
 
     try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: `Create ${count} concise flashcards from the following text. 
-            Respond in ${language === 'ar' ? 'Arabic' : 'English'}.
-            Keep questions and answers short and clear (max 30 words).
-            Return ONLY a valid JSON array of objects with 'front' (question) and 'back' (answer) properties.
-            Do not add markdown formatting.
-            
-            Text: ${content.substring(0, 2000)}`,
-            config: {
+        const model = genAI.getGenerativeModel({
+            model: "gemini-1.5-flash",
+            generationConfig: {
                 responseMimeType: "application/json",
                 responseSchema: {
-                    type: Type.ARRAY,
+                    type: SchemaType.ARRAY,
                     items: {
-                        type: Type.OBJECT,
+                        type: SchemaType.OBJECT,
                         properties: {
-                            front: { type: Type.STRING },
-                            back: { type: Type.STRING }
+                            front: { type: SchemaType.STRING },
+                            back: { type: SchemaType.STRING }
                         }
                     }
                 }
             }
         });
 
-        const text = response.text || "[]";
+        const prompt = `Create ${count} concise flashcards from the following text. 
+        Respond in ${language === 'ar' ? 'Arabic' : 'English'}.
+        Keep questions and answers short and clear (max 30 words).
+        Return ONLY a valid JSON array of objects with 'front' (question) and 'back' (answer) properties.
+        Do not add markdown formatting.
+        
+        Text: ${content.substring(0, 2000)}`;
+
+        const result = await model.generateContent(prompt);
+        const text = result.response.text();
         return JSON.parse(text);
     } catch (error) {
         console.error("Flashcard Gen Error:", error);
@@ -133,43 +135,45 @@ export const generateFlashcards = async (content: string, count: number = 5, api
 };
 
 export const generateQuiz = async (content: string, apiKey?: string, language: 'en' | 'ar' = 'en'): Promise<Question[]> => {
-    const ai = getClient(apiKey);
-    if (!ai) return [];
+    const genAI = getClient(apiKey);
+    if (!genAI) return [];
 
     try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: `Generate exactly 10 multiple choice questions based on the text provided.
-            Language: ${language === 'ar' ? 'Arabic' : 'English'}.
-            The output MUST be a JSON array of objects.
-            Each object must have:
-            - question (string)
-            - options (array of 4 strings)
-            - correctIndex (number 0-3)
-            - explanation (string explaining why the answer is correct)
-
-            Text: ${content.substring(0, 3000)}`,
-            config: {
+        const model = genAI.getGenerativeModel({
+            model: "gemini-1.5-flash",
+            generationConfig: {
                 responseMimeType: "application/json",
                 responseSchema: {
-                    type: Type.ARRAY,
+                    type: SchemaType.ARRAY,
                     items: {
-                        type: Type.OBJECT,
+                        type: SchemaType.OBJECT,
                         properties: {
-                            question: { type: Type.STRING },
+                            question: { type: SchemaType.STRING },
                             options: { 
-                                type: Type.ARRAY,
-                                items: { type: Type.STRING }
+                                type: SchemaType.ARRAY,
+                                items: { type: SchemaType.STRING }
                             },
-                            correctIndex: { type: Type.NUMBER },
-                            explanation: { type: Type.STRING }
+                            correctIndex: { type: SchemaType.NUMBER },
+                            explanation: { type: SchemaType.STRING }
                         }
                     }
                 }
             }
         });
+
+        const prompt = `Generate exactly 10 multiple choice questions based on the text provided.
+        Language: ${language === 'ar' ? 'Arabic' : 'English'}.
+        The output MUST be a JSON array of objects.
+        Each object must have:
+        - question (string)
+        - options (array of 4 strings)
+        - correctIndex (number 0-3)
+        - explanation (string explaining why the answer is correct)
+
+        Text: ${content.substring(0, 3000)}`;
         
-        const text = response.text || "[]";
+        const result = await model.generateContent(prompt);
+        const text = result.response.text();
         const rawQuestions = JSON.parse(text);
         
         // Add IDs
