@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Deck, Flashcard, User } from '../types';
 import { generateFlashcards } from '../services/geminiService';
@@ -180,19 +181,42 @@ const Flashcards: React.FC<FlashcardsProps> = ({ user, decks, onUpdateDecks, onA
                       >
                           <div className={`absolute inset-0 w-full h-full transition-all duration-500 preserve-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
                               {/* Front */}
-                              <div className="absolute inset-0 w-full h-full bg-space-800 border border-white/10 rounded-3xl p-6 flex flex-col items-center justify-center text-center shadow-2xl backface-hidden overflow-hidden">
-                                  <span className="absolute top-6 left-6 text-xs font-bold text-neon-cyan uppercase tracking-widest">Question</span>
-                                  <div className="w-full max-h-[70%] overflow-y-auto no-scrollbar flex flex-col justify-center items-center">
-                                    <p className="text-lg md:text-xl font-bold leading-relaxed break-words whitespace-pre-wrap">{studyQueue[currentCardIndex].front}</p>
+                              <div className="absolute inset-0 w-full h-full bg-space-800 border border-white/10 rounded-3xl flex flex-col shadow-2xl backface-hidden overflow-hidden">
+                                  {/* Header */}
+                                  <div className="p-6 pb-2 shrink-0">
+                                      <span className="text-xs font-bold text-neon-cyan uppercase tracking-widest">Question</span>
                                   </div>
-                                  <p className="absolute bottom-6 text-slate-500 text-sm animate-pulse">Tap to flip</p>
+                                  
+                                  {/* Content - Flexible & Scrollable */}
+                                  <div className="flex-1 w-full overflow-y-auto no-scrollbar px-6 flex items-center justify-center">
+                                      <p className="text-lg md:text-xl font-bold leading-relaxed text-center break-words whitespace-pre-wrap">
+                                          {studyQueue[currentCardIndex].front}
+                                      </p>
+                                  </div>
+
+                                  {/* Footer */}
+                                  <div className="p-6 pt-2 text-center shrink-0">
+                                      <p className="text-slate-500 text-sm animate-pulse">Tap to flip</p>
+                                  </div>
                               </div>
 
                               {/* Back */}
-                              <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-indigo-900 to-space-800 border border-neon-purple/30 rounded-3xl p-6 flex flex-col items-center justify-center text-center shadow-2xl backface-hidden rotate-y-180 overflow-hidden">
-                                  <span className="absolute top-6 left-6 text-xs font-bold text-neon-purple uppercase tracking-widest">Answer</span>
-                                  <div className="w-full max-h-[80%] overflow-y-auto no-scrollbar flex flex-col justify-center items-center">
-                                    <p className="text-base md:text-lg leading-relaxed text-slate-100 break-words whitespace-pre-wrap">{studyQueue[currentCardIndex].back}</p>
+                              <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-indigo-900 to-space-800 border border-neon-purple/30 rounded-3xl flex flex-col shadow-2xl backface-hidden rotate-y-180 overflow-hidden">
+                                  {/* Header */}
+                                  <div className="p-6 pb-2 shrink-0">
+                                      <span className="text-xs font-bold text-neon-purple uppercase tracking-widest">Answer</span>
+                                  </div>
+                                  
+                                  {/* Content - Flexible & Scrollable */}
+                                  <div className="flex-1 w-full overflow-y-auto no-scrollbar px-6 flex items-center justify-center">
+                                      <p className="text-base md:text-lg leading-relaxed text-slate-100 text-center break-words whitespace-pre-wrap">
+                                          {studyQueue[currentCardIndex].back}
+                                      </p>
+                                  </div>
+
+                                  {/* Footer Placeholder for visual balance */}
+                                  <div className="p-6 pt-2 text-center shrink-0 opacity-0">
+                                      <p className="text-sm">Answer</p>
                                   </div>
                               </div>
                           </div>
