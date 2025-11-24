@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -7,115 +6,39 @@
     <meta name="theme-color" content="#0B0F19" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <!-- Use relative path for manifest -->
+    
+    <!-- Fix 404 Favicon: Use an emoji data URI so no file upload is needed -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌌</text></svg>">
+    
     <link rel="manifest" href="./manifest.json" />
     <link rel="apple-touch-icon" href="https://picsum.photos/192" />
     
-    <!-- Google Fonts: Cairo for Arabic -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
 
     <title>Nova Learn</title>
     
-    <!-- Polyfill process to prevent "process is not defined" crash on GitHub Pages -->
     <script>
       window.process = { env: { NODE_ENV: 'production' } };
     </script>
-
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Segoe UI', 'Cairo', 'sans-serif'],
-            },
-            colors: {
-              space: {
-                900: '#0B0F19',
-                800: '#141B35',
-                700: '#1E2545',
-              },
-              neon: {
-                purple: '#B026FF',
-                blue: '#4D4DFF',
-                cyan: '#00F0FF'
-              }
-            },
-            animation: {
-              'twinkle': 'twinkle 4s ease-in-out infinite',
-              'float': 'float 6s ease-in-out infinite',
-              'slideUp': 'slideUp 0.3s ease-out',
-            },
-            keyframes: {
-              twinkle: {
-                '0%, 100%': { opacity: 0.2 },
-                '50%': { opacity: 1 },
-              },
-              float: {
-                '0%, 100%': { transform: 'translateY(0)' },
-                '50%': { transform: 'translateY(-10px)' },
-              },
-              slideUp: {
-                '0%': { transform: 'translateY(20px)', opacity: 0 },
-                '100%': { transform: 'translateY(0)', opacity: 1 },
-              }
-            }
-          },
-        },
-      }
-    </script>
-    <style>
-      body {
-        background-color: #0B0F19;
-        font-family: 'Segoe UI', 'Cairo', Tahoma, Geneva, Verdana, sans-serif;
-        overflow: hidden; /* Prevent body scroll, handle in app */
-        -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
-        touch-action: manipulation; /* Improve touch response */
-      }
-      /* Custom Scrollbar for chat/lists */
-      .no-scrollbar::-webkit-scrollbar {
-        display: none;
-      }
-      .no-scrollbar {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-      }
-      
-      /* Safe Area Support for iPhone X+ */
-      .safe-area-top {
-        padding-top: env(safe-area-inset-top);
-      }
-      .safe-area-bottom {
-        padding-bottom: env(safe-area-inset-bottom);
-      }
-
-      /* RTL specific fixes */
-      [dir="rtl"] .rotate-rtl-180 {
-        transform: rotate(180deg);
-      }
-    </style>
-<script type="importmap">
+  <script type="importmap">
 {
   "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
-    "vite": "https://aistudiocdn.com/vite@^7.2.4",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
-    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "@google/generative-ai": "https://aistudiocdn.com/@google/generative-ai@^0.24.1",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
     "recharts": "https://aistudiocdn.com/recharts@^3.5.0",
-    "@google/generative-ai": "https://aistudiocdn.com/@google/generative-ai@^0.24.1"
+    "vite": "https://aistudiocdn.com/vite@^7.2.4",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1"
   }
 }
 </script>
 </head>
   <body>
     <div id="root" class="h-full w-full">
-        <!-- Initial Loading State to prevent black screen while React loads -->
         <div style="height: 100%; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #0B0F19; color: white;">
             <div style="font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #00F0FF;">Nova Learn</div>
             <div style="width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1); border-top-color: #B026FF; border-radius: 50%; animation: spin 1s linear infinite;"></div>
@@ -125,21 +48,6 @@
         </div>
     </div>
     
-    <!-- Error Handler to debug black screens -->
-    <div id="error-display" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:black; color:red; padding:20px; z-index:9999; overflow:auto;">
-      <h2 style="color:white">Application Error</h2>
-      <pre id="error-message"></pre>
-    </div>
-    <script>
-      window.onerror = function(message, source, lineno, colno, error) {
-        const el = document.getElementById('error-display');
-        const msgEl = document.getElementById('error-message');
-        el.style.display = 'block';
-        msgEl.innerText = `${message}\nAt: ${source}:${lineno}:${colno}\n${error ? error.stack : ''}`;
-      };
-    </script>
-    
-    <!-- Entry Point -->
     <script type="module" src="./index.tsx"></script>
   </body>
 </html>
