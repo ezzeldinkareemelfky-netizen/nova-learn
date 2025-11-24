@@ -1,9 +1,9 @@
 
 const CACHE_NAME = 'nova-learn-v1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json',
+  './',
+  './index.html',
+  './manifest.json',
   // Add other assets like icons here if they were local files
 ];
 

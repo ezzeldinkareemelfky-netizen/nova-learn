@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Deck, Flashcard, User } from '../types';
 import { generateFlashcards } from '../services/geminiService';
@@ -173,15 +172,15 @@ const Flashcards: React.FC<FlashcardsProps> = ({ user, decks, onUpdateDecks, onA
                       </button>
                   </div>
               ) : (
-                  <div className="flex-1 flex flex-col relative perspective-1000 min-h-0">
+                  <div className="flex-1 flex flex-col relative [perspective:1000px] min-h-0">
                       {/* Card Container */}
                       <div 
                         className="flex-1 relative cursor-pointer group mb-8"
                         onClick={() => setIsFlipped(!isFlipped)}
                       >
-                          <div className={`absolute inset-0 w-full h-full transition-all duration-500 preserve-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
+                          <div className={`absolute inset-0 w-full h-full transition-all duration-500 [transform-style:preserve-3d] ${isFlipped ? '[transform:rotateY(180deg)]' : ''}`}>
                               {/* Front */}
-                              <div className="absolute inset-0 w-full h-full bg-space-800 border border-white/10 rounded-3xl flex flex-col shadow-2xl backface-hidden overflow-hidden">
+                              <div className="absolute inset-0 w-full h-full bg-space-800 border border-white/10 rounded-3xl flex flex-col shadow-2xl [backface-visibility:hidden] overflow-hidden">
                                   {/* Header */}
                                   <div className="p-6 pb-2 shrink-0">
                                       <span className="text-xs font-bold text-neon-cyan uppercase tracking-widest">Question</span>
@@ -201,7 +200,7 @@ const Flashcards: React.FC<FlashcardsProps> = ({ user, decks, onUpdateDecks, onA
                               </div>
 
                               {/* Back */}
-                              <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-indigo-900 to-space-800 border border-neon-purple/30 rounded-3xl flex flex-col shadow-2xl backface-hidden rotate-y-180 overflow-hidden">
+                              <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-indigo-900 to-space-800 border border-neon-purple/30 rounded-3xl flex flex-col shadow-2xl [backface-visibility:hidden] [transform:rotateY(180deg)] overflow-hidden">
                                   {/* Header */}
                                   <div className="p-6 pb-2 shrink-0">
                                       <span className="text-xs font-bold text-neon-purple uppercase tracking-widest">Answer</span>
@@ -224,19 +223,19 @@ const Flashcards: React.FC<FlashcardsProps> = ({ user, decks, onUpdateDecks, onA
 
                       {/* Controls */}
                       <div className={`grid grid-cols-4 gap-3 transition-opacity duration-300 h-20 shrink-0 ${isFlipped ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-                          <button onClick={() => handleRating('again')} className="flex flex-col items-center justify-center p-2 rounded-xl bg-red-500/20 border border-red-500/30 text-red-300 active:scale-95">
+                          <button onClick={(e) => {e.stopPropagation(); handleRating('again');}} className="flex flex-col items-center justify-center p-2 rounded-xl bg-red-500/20 border border-red-500/30 text-red-300 active:scale-95">
                               <span className="text-xs font-bold">Again</span>
                               <span className="text-[10px] opacity-60">1m</span>
                           </button>
-                          <button onClick={() => handleRating('hard')} className="flex flex-col items-center justify-center p-2 rounded-xl bg-orange-500/20 border border-orange-500/30 text-orange-300 active:scale-95">
+                          <button onClick={(e) => {e.stopPropagation(); handleRating('hard');}} className="flex flex-col items-center justify-center p-2 rounded-xl bg-orange-500/20 border border-orange-500/30 text-orange-300 active:scale-95">
                               <span className="text-xs font-bold">Hard</span>
                               <span className="text-[10px] opacity-60">2d</span>
                           </button>
-                          <button onClick={() => handleRating('good')} className="flex flex-col items-center justify-center p-2 rounded-xl bg-blue-500/20 border border-blue-500/30 text-blue-300 active:scale-95">
+                          <button onClick={(e) => {e.stopPropagation(); handleRating('good');}} className="flex flex-col items-center justify-center p-2 rounded-xl bg-blue-500/20 border border-blue-500/30 text-blue-300 active:scale-95">
                               <span className="text-xs font-bold">Good</span>
                               <span className="text-[10px] opacity-60">4d</span>
                           </button>
-                          <button onClick={() => handleRating('easy')} className="flex flex-col items-center justify-center p-2 rounded-xl bg-green-500/20 border border-green-500/30 text-green-300 active:scale-95">
+                          <button onClick={(e) => {e.stopPropagation(); handleRating('easy');}} className="flex flex-col items-center justify-center p-2 rounded-xl bg-green-500/20 border border-green-500/30 text-green-300 active:scale-95">
                               <span className="text-xs font-bold">Easy</span>
                               <span className="text-[10px] opacity-60">7d</span>
                           </button>
@@ -368,13 +367,6 @@ const Flashcards: React.FC<FlashcardsProps> = ({ user, decks, onUpdateDecks, onA
             </div>
         </div>
       )}
-      
-      <style>{`
-        .preserve-3d { transform-style: preserve-3d; }
-        .backface-hidden { backface-visibility: hidden; }
-        .rotate-y-180 { transform: rotateY(180deg); }
-        .perspective-1000 { perspective: 1000px; }
-      `}</style>
     </div>
   );
 };

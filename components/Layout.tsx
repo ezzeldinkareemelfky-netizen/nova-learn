@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Home, BookOpen, MessageCircle, BarChart2, Users, Layers, GraduationCap } from 'lucide-react';
 import { Screen } from '../types';

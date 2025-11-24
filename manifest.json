@@ -1,7 +1,8 @@
 {
   "name": "Nova Learn",
   "short_name": "Nova",
-  "start_url": "./index.html",
+  "start_url": ".",
+  "scope": ".",
   "display": "standalone",
   "background_color": "#0B0F19",
   "theme_color": "#0B0F19",

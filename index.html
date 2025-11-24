@@ -7,7 +7,7 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     
-    <!-- Fix 404 Favicon: Use an emoji data URI so no file upload is needed -->
+    <!-- Emoji Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌌</text></svg>">
     
     <link rel="manifest" href="./manifest.json" />
@@ -21,6 +21,53 @@
     
     <script>
       window.process = { env: { NODE_ENV: 'production' } };
+    </script>
+
+    <!-- Tailwind CSS CDN for immediate UI restoration -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Segoe UI', 'Cairo', 'sans-serif'],
+            },
+            colors: {
+              space: {
+                900: '#0B0F19',
+                800: '#141B35',
+                700: '#1E2545',
+              },
+              neon: {
+                purple: '#B026FF',
+                blue: '#4D4DFF',
+                cyan: '#00F0FF'
+              }
+            },
+            animation: {
+              'twinkle': 'twinkle 4s ease-in-out infinite',
+              'float': 'float 6s ease-in-out infinite',
+              'slideUp': 'slideUp 0.3s ease-out',
+            },
+            keyframes: {
+              twinkle: {
+                '0%, 100%': { opacity: 0.2 },
+                '50%': { opacity: 1 },
+              },
+              float: {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-10px)' },
+              },
+              slideUp: {
+                '0%': { transform: 'translateY(20px)', opacity: 0 },
+                '100%': { transform: 'translateY(0)', opacity: 1 },
+              }
+            }
+          },
+        },
+        plugins: [],
+      }
     </script>
   <script type="importmap">
 {
